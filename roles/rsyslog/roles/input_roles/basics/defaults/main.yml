@@ -32,7 +32,7 @@ __rsyslog_basics_rules:
 # Debops example configuration options
 # --------------------------------------------
 
-# __rsyslog_conf_local_modules
+# __rsyslog_conf_local_basics_modules
 #
 # List of ``rsyslogd`` modules that enable logs from the local system to be
 # received and parsed by the ``rsyslogd`` daemon.
@@ -42,6 +42,13 @@ __rsyslog_conf_local_basics_modules:
     type: 'modules'
     sections:
 
+      - comment: 'Reads kernel messages (the same are read from journald)'
+        options: |-
+          module(load="imklog" permitnonkernelfacility="on")
+        state: '{{ "present"
+                  if ("kernel-message" in rsyslog_capabilities)
+                  else "absent" }}'
+
       - comment: 'Log messages sent to local UNIX socket'
         options: |-
           module(load="imuxsock"    # provides support for local system logging (e.g. via logger command)
@@ -50,16 +57,21 @@ __rsyslog_conf_local_basics_modules:
           {% else %}
                  SysSock.Use="off") # Turn off message reception via local log socket.
           {% endif %}
-          # local messages are retrieved through imjournal now.
-          module(load="imjournal"             # provides access to the systemd journal
-                 StateFile="{{ rsyslog_work_dir }}/imjournal.state") # File to store the position in the journal
+          # Read from journal
+          {% for element in rsyslog_logs_collections %}
+          {% if element.name is defined and element.type == "basics" %}
+          module(load="imjournal"
+                 StateFile="{{ rsyslog_work_dir }}/imjournal.state"
+                 RateLimit.Burst="{{ element.rsyslog_imjournal_ratelimit_burst | d(20000) }}"
+                 RateLimit.Interval="{{ element.rsyslog_imjournal_ratelimit_interval | d(600) }}"
+                 PersistStateInterval="{{ element.rsyslog_imjournal_persist_state_interval | d(10) }}")
+          call files
+          {% if element.rsyslog_use_forwards_ruleset | d([]) %}
+          call forwards
+          {% endif %}
 
-      - comment: 'Reads kernel messages (the same are read from journald)'
-        options: |-
-          module(load="imklog" permitnonkernelfacility="on")
-        state: '{{ "present"
-                  if ("kernel-message" in rsyslog_capabilities)
-                  else "absent" }}'
+          {% endif %}
+          {% endfor %}
 
       - comment: 'Read messages sent over UDP or plain TCP without TLS'
         options: |-
@@ -86,37 +98,6 @@ __rsyslog_conf_local_basics_modules:
           )
         state: '{{ "present"
                   if ("network" in rsyslog_capabilities) and ("tls" in rsyslog_capabilities)
-                  else "absent" }}'
-
-# __rsyslog_conf_default_rulesets
-#
-# The ``rsyslogd`` configuration can contain multiple rulesets, each one
-# connected to an input channel (see
-# http://www.rsyslog.com/doc/v8-stable/concepts/multi_ruleset.html for more
-# details).
-#
-# By default ``rsyslog`` use the default ruleset for local system logs,
-# and defines a separate ``remote`` ruleset for logs incoming over the
-# network from remote hosts. The local log rules are stored in
-# `{{ rsyslog_config_dir }}/*.system` configuration files, and remote log
-# rules are stored in `{{ rsyslog_config_dir }}/*.remote` configuration files.
-__rsyslog_conf_default_rulesets:
-
-  - name: 'default-rulesets'
-    type: 'rules'
-    sections:
-
-      - comment: 'Rules for the local system logs'
-        options: |-
-          $IncludeConfig {{ rsyslog_config_dir }}/*.system
-
-      - comment: 'Rules for logs incoming from remote hosts'
-        options: |-
-          ruleset(name="remote") {
-            $IncludeConfig {{ rsyslog_config_dir }}/*.remote
-          }
-        state: '{{ "present"
-                  if ("network" in rsyslog_capabilities)
                   else "absent" }}'
 
 # __rsyslog_conf_system_input

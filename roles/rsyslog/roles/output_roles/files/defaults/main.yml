@@ -32,9 +32,9 @@ __rsyslog_conf_files_output_modules:
 # same as the default ``rsyslogd`` configuration provided in the installations.
 __rsyslog_conf_files_output_rules:
 
-  - name: 'output-files'
+  - name: 'output'
     type: 'output'
-    suffix: 'system'
+    suffix: 'files'
     path: '{{ rsyslog_config_dir }}'
     sections:
 
@@ -170,7 +170,7 @@ __rsyslog_conf_remote_templates:
 #
 __rsyslog_conf_remote_output:
 
-  - name: 'remote-dynamic-logs'
+  - name: 'dynamic-logs'
     comment: 'Store remote logs in separate logfiles'
     type: 'output'
     suffix: 'remote'

@@ -7,7 +7,6 @@
 
 __rsyslog_viaq_rules:
 
-  - '{{ __rsyslog_conf_local_viaq_modules }}'
   - '{{ __rsyslog_conf_viaq_main_modules }}'
   - '{{ __rsyslog_conf_viaq_formatting }}'
   - '{{ __rsyslog_rulebase_viaq_parse_json }}'
@@ -16,20 +15,6 @@ __rsyslog_viaq_rules:
 
 # Default Viaq configuration options
 # ---------------------------------
-
-# __rsyslog_conf_local_viaq_modules
-#
-# List of ``rsyslogd`` modules that enable logs from the local system to be
-# received and parsed by the ``rsyslogd`` daemon.
-__rsyslog_conf_local_viaq_modules:
-
-  - name: 'local-viaq-modules'
-    type: 'modules'
-    sections:
-
-      - comment: 'Log messages sent to local UNIX socket with use=off'
-        options: |-
-          module(load="imuxsock" SysSock.use="off")
 
 __rsyslog_conf_viaq_main_modules:
 
@@ -40,10 +25,6 @@ __rsyslog_conf_viaq_main_modules:
       - options: |-
           # Read from file with inotify enabled
           module(load="imfile" mode="inotify")
-
-      - options: |-
-          # Read from journal
-          module(load="imjournal" StateFile="{{ rsyslog_work_dir }}/imjournal.state" UsePid="both" RateLimit.Burst="{{ imjournal_ratelimit_burst | default(1000000) }}" RateLimit.Interval="{{ imjournal_ratelimit_interval | default(10) }}" PersistStateInterval="1000" WorkAroundJournalBug="on")
 
       - options: |-
           # Normalize logs

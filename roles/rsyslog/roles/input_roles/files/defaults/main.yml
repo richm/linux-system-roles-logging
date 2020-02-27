@@ -20,7 +20,6 @@ rsyslog_input_log_tag: "container"
 # in a special format. This list specifies ``rsyslogd`` imfile configuration.
 __rsyslog_files_input_rules:
   - '{{ __rsyslog_conf_imfile_modules }}'
-  - '{{ __rsyslog_conf_imfile_rulesets }}'
   - '{{ __rsyslog_conf_imfile_inputs }}'
 
 # Debops example configuration options
@@ -40,22 +39,6 @@ __rsyslog_conf_imfile_modules:
         options: |-
           module(load="imfile" mode="inotify")
 
-# __rsyslog_conf_imfile_rulesets
-#
-__rsyslog_conf_imfile_rulesets:
-
-  - name: 'imfile-rulesets'
-    type: 'rules'
-    sections:
-
-      - comment: 'Rules for the messages from log files'
-        options: |-
-          ruleset(name="files") {
-            $IncludeConfig {{rsyslog_config_dir}}/*.files
-          }
-
-# __rsyslog_conf_system_inputs
-#
 __rsyslog_conf_imfile_inputs:
 
   - name: 'imfile-input'
@@ -91,17 +74,42 @@ __rsyslog_conf_imfile_inputs:
           {% if element.name is defined and element.type == "files" %}
           {% if element.rsyslog_input_log_path is defined %}
           {% if element.rsyslog_input_log_tag is defined %}
+          {% if element.rsyslog_use_files_ruleset | d() %}
+          input(type="imfile" file="{{ element.rsyslog_input_log_path }}" tag="{{ element.rsyslog_input_log_tag }}" ruleset="files")
+          {% elif element.rsyslog_use_forwards_ruleset | d() %}
+          input(type="imfile" file="{{ element.rsyslog_input_log_path }}" tag="{{ element.rsyslog_input_log_tag }}" ruleset="forwards")
+          {% else %}
           input(type="imfile" file="{{ element.rsyslog_input_log_path }}" tag="{{ element.rsyslog_input_log_tag }}")
+          {% endif %}
+          {% else %}
+          {% if element.rsyslog_use_files_ruleset | d() %}
+          input(type="imfile" file="{{ element.rsyslog_input_log_path }}" tag="{{ rsyslog_input_log_tag }}" ruleset="files")
+          {% elif element.rsyslog_use_forwards_ruleset | d() %}
+          input(type="imfile" file="{{ element.rsyslog_input_log_path }}" tag="{{ rsyslog_input_log_tag }}" ruleset="forwards")
           {% else %}
           input(type="imfile" file="{{ element.rsyslog_input_log_path }}" tag="{{ rsyslog_input_log_tag }}")
           {% endif %}
+          {% endif %}
           {% else %}
           {% if element.rsyslog_input_log_tag is defined %}
+          {% if element.rsyslog_use_files_ruleset | d() %}
+          input(type="imfile" file="{{ rsyslog_input_log_path }}" tag="{{ element.rsyslog_input_log_tag }}" ruleset="files")
+          {% elif element.rsyslog_use_forwards_ruleset | d() %}
+          input(type="imfile" file="{{ rsyslog_input_log_path }}" tag="{{ element.rsyslog_input_log_tag }}" ruleset="forwards")
+          {% else %}
           input(type="imfile" file="{{ rsyslog_input_log_path }}" tag="{{ element.rsyslog_input_log_tag }}")
+          {% endif %}
+          {% else %}
+          {% if element.rsyslog_use_files_ruleset | d() %}
+          input(type="imfile" file="{{ rsyslog_input_log_path }}" tag="{{ rsyslog_input_log_tag }}" ruleset="files")
+          {% elif element.rsyslog_use_forwards_ruleset | d() %}
+          input(type="imfile" file="{{ rsyslog_input_log_path }}" tag="{{ rsyslog_input_log_tag }}" ruleset="forwards")
           {% else %}
           input(type="imfile" file="{{ rsyslog_input_log_path }}" tag="{{ rsyslog_input_log_tag }}")
           {% endif %}
           {% endif %}
+          {% endif %}
+
           {% endif %}
           {% endfor %}
 
