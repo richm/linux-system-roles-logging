@@ -12,9 +12,9 @@ __rsyslog_forwards_output_rules:
 # Enable log forwarding to another ``rsyslogd`` instance if `rsyslog_forwards_actions` variables are defined.
 __rsyslog_conf_forwards_output_rules:
 
-  - name: 'output-forwards'
+  - name: 'output'
     type: 'output'
-    suffix: 'system'
+    suffix: 'forwards'
     path: '{{ rsyslog_config_dir }}'
     state: '{{ "present" if (rsyslog_forwards_actions | d())
                else "absent" }}'

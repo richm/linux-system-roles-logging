@@ -2,7 +2,7 @@
   hosts: all
   become: true
   vars:
-    __test_files_conf: /etc/rsyslog.d/30-output-files.system
+    __test_files_conf: /etc/rsyslog.d/30-output.files
 
   tasks:
     - name: deploy config to output into local files
@@ -34,11 +34,6 @@
         that: rsyslog_d_file_count.matched >= 9
 
     - name: Get the files config stat
-      stat:
-        path: "{{ __test_files_conf }}"
-      register: stat_output_files_system
-
-    - name: Get the forwarding config stat
       stat:
         path: "{{ __test_files_conf }}"
       register: stat_output_files_system

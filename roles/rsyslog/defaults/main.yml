@@ -239,6 +239,7 @@ __rsyslog_common_rules:
   - '{{ __rsyslog_conf_global_options }}'
   - '{{ __rsyslog_conf_local_modules }}'
   - '{{ __rsyslog_conf_common_defaults }}'
+  - '{{ __rsyslog_conf_default_rulesets }}'
   - '{{ __rsyslog_conf_send_targets_only }}'
 
 
@@ -302,6 +303,45 @@ __rsyslog_conf_common_defaults:
       - comment: 'Log every message'
         options: |-
           $RepeatedMsgReduction {{ "on" if rsyslog_message_reduction | bool else "off" }}
+
+# __rsyslog_conf_default_rulesets
+#
+# The ``rsyslogd`` configuration can contain multiple rulesets, each one
+# connected to an input channel (see
+# http://www.rsyslog.com/doc/v8-stable/concepts/multi_ruleset.html for more
+# details).
+#
+# Default rulesets provide 3 paths in the output roles.
+# ruleset `file` directs to the files output role, which is implemented in `filename.files`.
+# ruleset `forwards` directs to the forwards output role, which is implemented in `filename.forwards`.
+# ruleset `remote` directs to the files output role, which is implemented in `filename.remote`.
+#
+# These rulesets are for managing the paths separately from the rest of the paths using .conf suffix.
+# For instance, system log messages are not to be sent to, e.g., elasticsearch, but to be stored
+# just in the local files.
+__rsyslog_conf_default_rulesets:
+
+  - name: 'default-rulesets'
+    type: 'rules'
+    sections:
+
+      - comment: 'Rules for the local system logs'
+        options: |-
+          ruleset(name="files") {
+            $IncludeConfig {{ rsyslog_config_dir }}/*.files
+          }
+          ruleset(name="forwards") {
+            $IncludeConfig {{ rsyslog_config_dir }}/*.forwards
+          }
+
+      - comment: 'Rules for logs incoming from remote hosts'
+        options: |-
+          ruleset(name="remote") {
+            $IncludeConfig {{ rsyslog_config_dir }}/*.remote
+          }
+        state: '{{ "present"
+                  if ("network" in rsyslog_capabilities)
+                  else "absent" }}'
 
 __rsyslog_conf_send_targets_only:
 

@@ -2,7 +2,7 @@
   hosts: all
   become: true
   vars:
-    __test_files_conf: /etc/rsyslog.d/30-output-files.system
+    __test_files_conf: /etc/rsyslog.d/30-output.files
 
   tasks:
     - name: deploy config to output into local files
@@ -91,7 +91,7 @@
 
     - name: Set forwarding config path
       set_fact:
-        test_forward_conf: "/etc/rsyslog.d/30-output-forwards.system"
+        test_forward_conf: "/etc/rsyslog.d/30-output.forwards"
 
     - name: Get the forwarding config stat
       stat:

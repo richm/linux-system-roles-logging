@@ -45,7 +45,7 @@
 
     - name: Set files config path
       set_fact:
-        test_outputfiles_conf: "/etc/rsyslog.d/30-output-files.system"
+        test_outputfiles_conf: "/etc/rsyslog.d/30-output.files"
 
     - name: Get the output files config stat
       stat:
