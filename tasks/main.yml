@@ -40,10 +40,7 @@
 
     - name: Set rsyslog_logs_collections
       set_fact:
-        rsyslog_logs_collections: "{{ rsyslog_logs_collections | d([]) }} + {{ [ item.1 | combine( {'output_name': item.0.name} )] }}"
-      with_subelements:
-        - "{{ logging_outputs }}"
-        - logs_collections
+        rsyslog_logs_collections: "{{ logs_collections }}"
 
     - name: Initialize rsyslog_outputs
       set_fact:
