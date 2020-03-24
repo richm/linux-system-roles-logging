@@ -49,18 +49,20 @@ __rsyslog_conf_local_basics_modules:
                   if ("kernel-message" in rsyslog_capabilities)
                   else "absent" }}'
 
-      - comment: 'Log messages sent to local UNIX socket'
+      - comment: 'System log messages'
         options: |-
+          # Log messages sent to local UNIX socket
           module(load="imuxsock"    # provides support for local system logging (e.g. via logger command)
           {% if rsyslog_use_imuxsock %}
                  SysSock.Use="on")  # Turn on message reception via local log socket.
           {% else %}
                  SysSock.Use="off") # Turn off message reception via local log socket.
           {% endif %}
-          # Read from journal
-          {% for element in rsyslog_logs_collections %}
+          # Read from journald
+          {% for element in logs_collections %}
           {% if element.name is defined and element.type == "basics" and
-             loop.previtem is defined and loop.previtem.type != "basics" %}
+             (loop.previtem is not defined or
+              (loop.previtem is defined and loop.previtem.type != "basics")) %}
           module(load="imjournal"
                  StateFile="{{ rsyslog_work_dir }}/imjournal.state"
                  RateLimit.Burst="{{ element.rsyslog_imjournal_ratelimit_burst | d(20000) }}"
@@ -79,15 +81,14 @@ __rsyslog_conf_local_basics_modules:
 
   - name: 'remote-modules'
     type: 'modules'
+    state: '{{ "present" if "network" in rsyslog_capabilities else "absent" }}'
     sections:
 
       - comment: 'Read messages sent over UDP or plain TCP without TLS'
         options: |-
           module(load="imudp")
           module(load="imptcp")
-        state: '{{ "present"
-                  if ("network" in rsyslog_capabilities) and (not rsyslog_send_over_tls_only)
-                  else "absent" }}'
+        state: '{{ "present" if not rsyslog_send_over_tls_only else "absent" }}'
 
       - comment: 'Read messages sent over Secure TCP with TLS'
         options: |-
@@ -104,9 +105,7 @@ __rsyslog_conf_local_basics_modules:
             {% endif %}
           {% endif %}
           )
-        state: '{{ "present"
-                  if ("network" in rsyslog_capabilities) and ("tls" in rsyslog_capabilities)
-                  else "absent" }}'
+        state: '{{ "present" if "tls" in rsyslog_capabilities else "absent" }}'
 
 # __rsyslog_conf_system_input
 #
@@ -114,14 +113,12 @@ __rsyslog_conf_system_input:
 
   - name: 'system-input'
     type: 'input'
+    state: '{{ "present" if rsyslog_use_imuxsock | d(false) | bool else "absent" }}'
     sections:
 
       - comment: 'Log messages from imuxsock'
         options: |-
           input(name="basics_imuxsock" type="imuxsock" socket="/dev/log")
-        state: '{{ "present"
-                  if rsyslog_use_imuxsock | d(false) | bool
-                  else "absent" }}'
 
 # __rsyslog_conf_network_input
 #

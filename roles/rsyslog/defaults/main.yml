@@ -281,14 +281,12 @@ __rsyslog_conf_local_modules:
 
   - name: 'local-modules'
     type: 'modules'
+    state: '{{ "present" if "mark" in rsyslog_capabilities else "absent" }}'
     sections:
 
       - comment: 'provides --MARK-- message capability'
         options: |-
           module(load="immark" interval={{ (60 * 60) }})
-        state: '{{ "present"
-                  if ("mark" in rsyslog_capabilities)
-                  else "absent" }}'
 
 # __rsyslog_conf_common_defaults
 #

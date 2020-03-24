@@ -29,10 +29,6 @@
         - item.type | d('') == 'forwards'
         - item.rsyslog_forwards_actions is defined
 
-    - name: Set rsyslog_logs_collections
-      set_fact:
-        rsyslog_logs_collections: "{{ logs_collections | d([]) }}"
-
     - name: Initialize rsyslog_outputs
       set_fact:
         rsyslog_outputs: []

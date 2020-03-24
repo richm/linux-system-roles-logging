@@ -47,10 +47,10 @@ __rsyslog_conf_imfile_inputs:
 
       - comment: 'Log messages from log files'
         options: |-
-          # FIXME: Need to normalize a log before passing it to elasticsearch output
           {% if rsyslog_elasticsearch | d([]) %}
+          # FIXME: Need to normalize a log before passing it to elasticsearch output
 
-          {% for element in rsyslog_logs_collections %}
+          {% for element in logs_collections %}
           {% if element.name is defined and element.type == "files" %}
           input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.rsyslog_input_log_tag | d(rsyslog_input_log_tag) }}" ruleset="try_es")
           {% endif %}
@@ -58,10 +58,10 @@ __rsyslog_conf_imfile_inputs:
 
           {% else %}
 
-          {% for element in rsyslog_logs_collections %}
+          {% for element in logs_collections %}
           {% if element.name is defined and element.type == "files" and
-             loop.previtem is defined and loop.previtem.type != "files" %}
-
+             (loop.previtem is not defined or
+              (loop.previtem is defined and loop.previtem.type != "files")) %}
           input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.rsyslog_input_log_tag | d(rsyslog_input_log_tag) }}")
           {% if element.rsyslog_use_files_ruleset | d(false) %}
           call files
@@ -70,7 +70,6 @@ __rsyslog_conf_imfile_inputs:
           call forwards
           {% endif %}
           stop
-
           {% endif %}
           {% endfor %}
 
