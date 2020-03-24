@@ -87,4 +87,4 @@
 
     - name: Check the filter
       assert:
-        that: files_conf_input_file.stdout is match("input\(type=\"imfile\" file=\"\/var\/log\/inputdirectory\/\*\.log\" tag=\"newtag\" ruleset=\"files\"\)")
+        that: files_conf_input_file.stdout is match("input\(type=\"imfile\" file=\"\/var\/log\/inputdirectory\/\*\.log\" tag=\"newtag\"\)")
