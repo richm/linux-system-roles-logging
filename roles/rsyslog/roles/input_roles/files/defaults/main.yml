@@ -59,14 +59,18 @@ __rsyslog_conf_imfile_inputs:
           {% else %}
 
           {% for element in rsyslog_logs_collections %}
-          {% if element.name is defined and element.type == "files" %}
-          {% if element.rsyslog_use_files_ruleset | d() %}
-          input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.rsyslog_input_log_tag | d(rsyslog_input_log_tag) }}" ruleset="files")
-          {% elif element.rsyslog_use_forwards_ruleset | d() %}
-          input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.rsyslog_input_log_tag | d(rsyslog_input_log_tag) }}" ruleset="forwards")
-          {% else %}
+          {% if element.name is defined and element.type == "files" and
+             loop.previtem is defined and loop.previtem.type != "files" %}
+
           input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.rsyslog_input_log_tag | d(rsyslog_input_log_tag) }}")
+          {% if element.rsyslog_use_files_ruleset | d(false) %}
+          call files
           {% endif %}
+          {% if element.rsyslog_use_forwards_ruleset | d(false) %}
+          call forwards
+          {% endif %}
+          stop
+
           {% endif %}
           {% endfor %}
 

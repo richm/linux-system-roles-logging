@@ -20,9 +20,6 @@
               - name: test1
                 facility: authpriv,auth
                 path: /var/log/secure
-            logs_collections:
-              - name: basic_input0
-                type: basics
           - name: output-forwards
             type: forwards
             rsyslog_forwards_actions:
@@ -37,9 +34,11 @@
                 protocol: tcp
                 target: host.domain
                 port: 2514
-            logs_collections:
-              - name: basic_input1
-                type: basics
+        logs_collections:
+          - name: basic_input0
+            type: basics
+            rsyslog_use_files_ruleset: true
+            rsyslog_use_forwards_ruleset: true
       include_role:
         name: linux-system-roles.logging
 

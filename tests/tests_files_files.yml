@@ -20,11 +20,12 @@
               - name: test1
                 facility: authpriv,auth
                 path: /var/log/secure
-            logs_collections:
-              - name: files_input
-                type: files
-                rsyslog_input_log_path: "{{ __test_inputfiles_dir }}/*.log"
-                rsyslog_input_log_tag: "newtag"
+        logs_collections:
+          - name: files_input
+            type: files
+            rsyslog_input_log_path: "{{ __test_inputfiles_dir }}/*.log"
+            rsyslog_input_log_tag: "newtag"
+            rsyslog_use_files_ruleset: true
       include_role:
         name: linux-system-roles.logging
 
@@ -63,11 +64,11 @@
 
     - name: Set input files config path
       set_fact:
-        test_inputfiles_conf: "/etc/rsyslog.d/90-imfile-input.conf"
+        __test_inputfiles_conf: "/etc/rsyslog.d/90-imfile-input.conf"
 
     - name: Get the files config stat
       stat:
-        path: "{{ test_inputfiles_conf }}"
+        path: "{{ __test_inputfiles_conf }}"
       register: stat_input_files_conf
 
     - name: Check if the input files config exists
@@ -75,15 +76,15 @@
         that: stat_input_files_conf.stat.exists
 
     - name: Cat input file
-      command: /bin/cat {{ test_inputfiles_conf }}
+      command: /bin/cat {{ __test_inputfiles_conf }}
       register: cat_file
       changed_when: false
 
     - name: Grep input file
-      command: /bin/grep 'inputdirectory' {{ test_inputfiles_conf }}
+      command: /bin/grep 'inputdirectory' {{ __test_inputfiles_conf }}
       register: files_conf_input_file
       changed_when: false
 
     - name: Check the filter
       assert:
-        that: files_conf_input_file.stdout is match("input\(type=\"imfile\" file=\"\/var\/log\/inputdirectory\/\*\.log\" tag=\"newtag\"\)")
+        that: files_conf_input_file.stdout is match("input\(type=\"imfile\" file=\"\/var\/log\/inputdirectory\/\*\.log\" tag=\"newtag\" ruleset=\"files\"\)")
