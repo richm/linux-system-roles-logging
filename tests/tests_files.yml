@@ -26,9 +26,10 @@
               - name: test3
                 facility: local7
                 path: /var/log/boot.log
-            logs_collections:
-              - name: basic_input
-                type: basics
+        logs_collections:
+          - name: basic_input
+            type: basics
+            rsyslog_use_files_ruleset: true
       include_role:
         name: linux-system-roles.logging
 

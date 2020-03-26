@@ -8,39 +8,30 @@
 
     - name: Set rsyslog_elasticsearch
       set_fact:
-        rsyslog_elasticsearch: "{{ rsyslog_elasticsearch | d([]) }} + {{ [ item.0 | combine( {'logs_collections_name': item.1.name} )] }}"
-      with_subelements:
-        - "{{ logging_outputs }}"
-        - logs_collections
+        rsyslog_elasticsearch: "{{ rsyslog_elasticsearch | d([]) }} + {{ [ item ] }}"
+      loop: "{{ logging_outputs }}"
       when:
-        - item.0.type | d('') == 'elasticsearch'
-        - item.1.state | d('present') == 'present'
+        - item.type | d('') == 'elasticsearch'
 
     - name: Set rsyslog_files_actions
       set_fact:
-        rsyslog_files_actions: "{{ rsyslog_files_actions | d([]) }} + {{ item.0.rsyslog_files_actions }}"
-      with_subelements:
-        - "{{ logging_outputs }}"
-        - logs_collections
+        rsyslog_files_actions: "{{ rsyslog_files_actions | d([]) }} + {{ item.rsyslog_files_actions }}"
+      loop: "{{ logging_outputs }}"
       when:
-        - item.0.type | d('') == 'files'
-        - item.0.rsyslog_files_actions is defined
-        - item.1.state | d('present') == 'present'
+        - item.type | d('') == 'files'
+        - item.rsyslog_files_actions is defined
 
     - name: Set rsyslog_forwards_actions
       set_fact:
-        rsyslog_forwards_actions: "{{ rsyslog_forwards_actions | d([]) }} + {{ item.0.rsyslog_forwards_actions }}"
-      with_subelements:
-        - "{{ logging_outputs }}"
-        - logs_collections
+        rsyslog_forwards_actions: "{{ rsyslog_forwards_actions | d([]) }} + {{ item.rsyslog_forwards_actions }}"
+      loop: "{{ logging_outputs }}"
       when:
-        - item.0.type | d('') == 'forwards'
-        - item.0.rsyslog_forwards_actions is defined
-        - item.1.state | d('present') == 'present'
+        - item.type | d('') == 'forwards'
+        - item.rsyslog_forwards_actions is defined
 
     - name: Set rsyslog_logs_collections
       set_fact:
-        rsyslog_logs_collections: "{{ logs_collections }}"
+        rsyslog_logs_collections: "{{ logs_collections | d([]) }}"
 
     - name: Initialize rsyslog_outputs
       set_fact:

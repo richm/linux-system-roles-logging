@@ -12,9 +12,9 @@
         logging_outputs:
           - name: files-output
             type: files
-            logs_collections:
-              - name: basic_input
-                type: basics
+        logs_collections:
+          - name: basic_input
+            type: basics
       include_role:
         name: linux-system-roles.logging
 

@@ -38,7 +38,7 @@ __rsyslog_basics_rules:
 # received and parsed by the ``rsyslogd`` daemon.
 __rsyslog_conf_local_basics_modules:
 
-  - name: 'local-basics-modules'
+  - name: 'basics-modules'
     type: 'modules'
     sections:
 
@@ -59,19 +59,27 @@ __rsyslog_conf_local_basics_modules:
           {% endif %}
           # Read from journal
           {% for element in rsyslog_logs_collections %}
-          {% if element.name is defined and element.type == "basics" %}
+          {% if element.name is defined and element.type == "basics" and
+             loop.previtem is defined and loop.previtem.type != "basics" %}
           module(load="imjournal"
                  StateFile="{{ rsyslog_work_dir }}/imjournal.state"
                  RateLimit.Burst="{{ element.rsyslog_imjournal_ratelimit_burst | d(20000) }}"
                  RateLimit.Interval="{{ element.rsyslog_imjournal_ratelimit_interval | d(600) }}"
                  PersistStateInterval="{{ element.rsyslog_imjournal_persist_state_interval | d(10) }}")
+          {% if element.rsyslog_use_files_ruleset | d(false) %}
           call files
-          {% if element.rsyslog_use_forwards_ruleset | d([]) %}
+          {% endif %}
+          {% if element.rsyslog_use_forwards_ruleset | d(false) %}
           call forwards
           {% endif %}
+          stop
 
           {% endif %}
           {% endfor %}
+
+  - name: 'remote-modules'
+    type: 'modules'
+    sections:
 
       - comment: 'Read messages sent over UDP or plain TCP without TLS'
         options: |-
