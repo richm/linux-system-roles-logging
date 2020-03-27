@@ -4,33 +4,29 @@
   vars:
     __test_files_conf: /etc/rsyslog.d/30-output.files
 
-
   tasks:
     - name: deploy config to output into local files
       vars:
         logging_enabled: true
-        logging_purge_confs: true
+        rsyslog_default: false
         logging_outputs:
-          - name: files-output
-            type: files
-            rsyslog_files_actions:
-              - name: test0
+          - name: output-forwards
+            type: forwards
+            rsyslog_forwards_actions:
+              - name: severity_and_facility
+                facility: local1
                 severity: info
-                exclude: authpriv.none;auth.none;cron.none;mail.none
-                path: /var/log/messages
-              - name: test1
-                facility: authpriv,auth
-                path: /var/log/secure
-              - name: test2
-                severity: emerg
-                path: :omusrmsg:*
-              - name: test3
-                facility: local7
-                path: /var/log/boot.log
+                protocol: tcp
+                target: host.domain
+                port: 1514
+              - name: facility_only
+                facility: local2
+                protocol: tcp
+                target: host.domain
+                port: 2514
         logs_collections:
-          - name: basic_input
+          - name: basic_input0
             type: basics
-            rsyslog_use_files_ruleset: true
       include_role:
         name: linux-system-roles.logging
 
@@ -47,7 +43,7 @@
 
     - name: Check file counts in rsyslog.d
       assert:
-        that: rsyslog_d_file_count.matched >= 7
+        that: rsyslog_d_file_count.matched >= 9
 
     - name: Get the files config stat
       stat:
@@ -65,7 +61,7 @@
 
     - name: Check the filter
       assert:
-        that: files_conf_messages.stdout is match("\*.info;*authpriv.none;auth.none;cron.none;mail.none.*.var.log.messages")
+        that: files_conf_messages.stdout is match("\*.info;mail.none;authpriv.none;cron.none.*.var.log.messages")
 
     - name: Run logger to generate a test log message
       command: /bin/logger -i -p local6.info -t testTag0 testMessage0000
@@ -79,3 +75,25 @@
     - name: Check if the test message is in /var/log/messages
       assert:
         that: testMessage0000.stdout | length > 0
+
+    - name: Set forwarding config path
+      set_fact:
+        test_forward_conf: "/etc/rsyslog.d/30-output.forwards"
+
+    - name: Get the forwarding config stat
+      stat:
+        path: "{{ test_forward_conf }}"
+      register: stat_output_forwards_system
+
+    - name: Check if the forwarding config exists
+      assert:
+        that: stat_output_forwards_system.stat.exists
+
+    - name: Grep severity_and_facility
+      command: /bin/grep "\<severity_and_facility\>" {{ test_forward_conf }}
+      register: severity_and_facility
+      changed_when: false
+
+    - name: Check severity_and_facility
+      assert:
+        that: severity_and_facility.stdout is match("local1\.info action.name=.severity_and_facility.* Target=.host.domain. Port=.1514. Protocol=.tcp.*")

@@ -152,10 +152,20 @@
         - input_item | d([])
         - input_item.state | d('present') == 'absent'
 
+    # Treat the files output specially.
+    # When logs_collections is defined and not empty,
+    #   If the rsyslog_outputs does not contain ['files'], add it.
+    - name: Add ['files'] to rsyslog_outputs if necessary
+      set_fact:
+        rsyslog_outputs: "{{ rsyslog_outputs | flatten(1) + ['files'] }}"
+      when:
+        - logs_collections | d([])
+        - (rsyslog_outputs is not defined) or ('files' not in rsyslog_outputs)
+
     - name: Run output sub-roles configs
       include_role:
         name: "{{ role_path }}/roles/output_roles/{{ output_item }}"
-      loop: "{{ rsyslog_outputs | flatten(1) }}"
+      loop: "{{ rsyslog_outputs }}"
       loop_control:
         loop_var: output_item
       when:

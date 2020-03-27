@@ -68,7 +68,7 @@ __rsyslog_conf_local_basics_modules:
                  RateLimit.Burst="{{ element.rsyslog_imjournal_ratelimit_burst | d(20000) }}"
                  RateLimit.Interval="{{ element.rsyslog_imjournal_ratelimit_interval | d(600) }}"
                  PersistStateInterval="{{ element.rsyslog_imjournal_persist_state_interval | d(10) }}")
-          {% if element.rsyslog_use_files_ruleset | d(false) %}
+          {% if element.rsyslog_use_files_ruleset | d(true) %}
           call files
           {% endif %}
           {% if element.rsyslog_use_forwards_ruleset | d(false) %}
