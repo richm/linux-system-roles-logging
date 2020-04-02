@@ -47,7 +47,7 @@ vars.yml
 ---------
 vars.yml stores variables which are passed to ansible to control the tasks.  The contents of this file could be merged into the inventory file.
 
-Currently, the role supports 3 types of logs collections ([input_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/input_roles/)): `basics`, `ovirt`, and `viaq`.  And 3 types of log outputs ([output_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/output_roles/)): `elasticsearch`, `files`, and `forwards`.  To deploy rsyslog configuration files with these input and output roles, first specify the output_role as `logging_outputs`, then input_role as `logs_collections` in each `logging_outputs`.  Multiple input roles could be required based on the use cases.
+Currently, the role supports 3 types of logs collections ([input_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/input_roles/)): `basics`, `ovirt`, and `viaq`.  And 3 types of log outputs ([output_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/output_roles/)): `elasticsearch`, `files`, and `forwards`.  To deploy rsyslog configuration files with these input and output roles, first specify the output_role as `logging_outputs`, then input_role as `logging_inputs` in each `logging_outputs`.  Multiple input roles could be required based on the use cases.
 
 To make an effect with the following setting, vars.yml has to have `logging_enabled: true`.  Unless `logging_enabled` is set to true, LSR/Logging does not deploy rsyslog config files.
 ```
@@ -56,14 +56,14 @@ rsyslog_default: false
 logging_outputs:
   -name: <output_role_name0>
    type: <output_type0>
-   logs_collections:
+   logging_inputs:
      - name: <input_role_nameA>
        type: <input_role_typeA>
      - name: <input_role_nameB>
        type: <input_role_typeB>
   -name: <output_role_name1>
    type: <output_type1>
-   logs_collections:
+   logging_inputs:
      - name: <input_role_nameC>
        type: <input_role_typeC>
 ```
@@ -93,7 +93,7 @@ rsyslog_backup_dir: /tmp/rsyslog_backup
 logging_outputs:
   - name: local-files
     type: files
-    logs_collections:
+    logging_inputs:
       - name: system-input
         type: basics
 ```
@@ -106,7 +106,7 @@ rsyslog_purge_original_conf: true
 logging_outputs:
   - name: local-files
     type: files
-    logs_collections:
+    logging_inputs:
       - name: system-and-remote-input
         type: basics
 ```
@@ -130,7 +130,7 @@ logging_outputs:
         protocol: tcp
         target: 10.20.30.40
         port: 514
-    logs_collections:
+    logging_inputs:
       - name: 'basics'
 ```
 
@@ -140,7 +140,7 @@ logging_enabled: true
 logging_outputs:
   - name: viaq-elasticsearch
     type: elasticsearch
-    logs_collections:
+    logging_inputs:
       - name: viaq-input
         type: viaq
     server_host: es-hostname
@@ -160,7 +160,7 @@ use_local_omelasticsearch_cert: true
 rsyslog_outputs:
   - name: viaq-elasticsearch
     type: elasticsearch
-    rsyslog_logs_collections:
+    logging_inputs:
       - name: viaq-input
         type: viaq
         state: present
@@ -178,7 +178,7 @@ rsyslog_outputs:
     key_src : "/path/to/es-key.pem"
   - name: viaq-elasticsearch-ops
     type: elasticsearch
-    rsyslog_logs_collections:
+    logging_inputs:
       - name: viaq-input
         type: viaq
         state: present

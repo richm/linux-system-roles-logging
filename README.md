@@ -70,22 +70,22 @@ vars.yml stores variables which are passed to ansible to control the tasks.
 Initial configuration will be supplied by default.
 User can supply further configuration to be used.
 
-Currently, the role supports 3 types of logs collections ([input_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/input_roles/)): `basics`, `ovirt`, and `viaq`.  And 3 types of log outputs ([output_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/output_roles/)): `elasticsearch`, `files`, and `forwards`.  To deploy configuration files with these input and output roles, first specify the output_role as `logging_outputs`, then input_role as `log_collections` in each `logging_outputs`.  Multiple input roles could be required based on the use cases.
+Currently, the role supports 3 types of logs collections ([input_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/input_roles/)): `basics`, `ovirt`, and `viaq`.  And 3 types of log outputs ([output_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/output_roles/)): `elasticsearch`, `files`, and `forwards`.  To deploy configuration files with these input and output roles, first specify the output_role as `logging_outputs`, then input_role as `logging_inputs` in each `logging_outputs`.  Multiple input roles could be required based on the use cases.
 
 To make an effect with the following setting, vars.yml has to have `logging_enabled: true`.  Unless logging_enabled is set to true, LSR/Logging does not deploy logging systems.
 
-**Note:** Current LSR/Logging supports rsyslog only.  In case other logging system is added to LSR/Logging in the future, it's supposed to implement the input and output roles to satisfy the logging_outputs and log_collections semantics.
+**Note:** Current LSR/Logging supports rsyslog only.  In case other logging system is added to LSR/Logging in the future, it's supposed to implement the input and output roles to satisfy the logging_outputs and logging_inputs semantics.
 ```
 logging_enabled: true
 logging_outputs:
   -name: <output_role_name0>
    type: <output_type0>
-   log_collections:
+   logging_inputs:
      - name: <input_role_nameA>
      - name: <input_role_nameB>
   -name: <output_role_name1>
    type: <output_type1>
-   log_collections:
+   logging_inputs:
      - name: <input_role_nameC>
 ```
 
@@ -109,7 +109,7 @@ logging_purge_confs: true
 logging_outputs:
   - name: local-files
     type: files
-    logs_collections:
+    logging_inputs:
       - name: system-input
         type: basics
 ```
@@ -122,7 +122,7 @@ logging_purge_confs: true
 logging_outputs:
   - name: local-files
     type: files
-    logs_collections:
+    logging_inputs:
       - name: system-and-remote-input
         type: basics
 ```
@@ -133,7 +133,7 @@ logging_enabled: true
 logging_outputs:
   - name: viaq-elasticsearch
     type: elasticsearch
-    logs_collections:
+    logging_inputs:
       - name: viaq-input
         type: viaq
     # 'state' is not a mandatory field. Defaults to 'present'.
@@ -150,7 +150,7 @@ logging_outputs:
     key: <PRIVATE_KEY>
   - name: ovirt-elasticsearch
     type: elasticsearch
-    logs_collections:
+    logging_inputs:
       - name: ovirt-input
         type: ovirt
     server_host: logging-es-ovirt
@@ -183,7 +183,7 @@ Variables in vars.yml
    -  **If `type: elasticsearch`**, send logs to one or more remote elasticsearch or Viaq installations.
       - `name`: Name of the elasticsearch element.
       - `type`: Type of the output element. Optional values: `elasticsearch`, `local`, `custom_files`.
-      - `logs_collections` : List of optional logs collections, dictionaries with `name`, `type` and `state` attributes, that were pre-configured.
+      - `logging_inputs` : List of optional logs collections, dictionaries with `name`, `type` and `state` attributes, that were pre-configured.
         - `name`: Unique name of the input.
           `type`: The type of the pre-configured logs to collect. **Note:** Currently ['viaq', 'viaq-k8s', 'ovirt'] are supported for the elasticsearch output.
           
@@ -216,7 +216,7 @@ This role is a generic wrapper for deploying and configuring the log collectors 
 format them and ship them to the required destination.
 It currently supports Rsyslog as the default logs collector.
 
-The projects are called `logs_collections` and the user can choose to deploy several projects at the same time.
+The projects are called `logging_inputs` and the user can choose to deploy several projects at the same time.
 Each project adds a sub-role to [input_roles](https://github.com/linux-system-roles/logging/tree/master/roles/rsyslog/roles/input_roles/).
 
 The sub-role usually includes `tasks` and `defaults` directories.

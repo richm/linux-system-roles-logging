@@ -11,7 +11,7 @@
         logging_outputs:
           - name: files-output
             type: files
-        logs_collections:
+        logging_inputs:
           - name: basic_input
             type: basics
 

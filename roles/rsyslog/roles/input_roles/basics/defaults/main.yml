@@ -59,7 +59,7 @@ __rsyslog_conf_local_basics_modules:
                  SysSock.Use="off") # Turn off message reception via local log socket.
           {% endif %}
           # Read from journald
-          {% for element in logs_collections %}
+          {% for element in logging_inputs %}
           {% if element.name is defined and element.type == "basics" and
              (loop.previtem is not defined or
               (loop.previtem is defined and loop.previtem.type != "basics")) %}

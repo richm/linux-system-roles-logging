@@ -9,7 +9,7 @@
       vars:
         logging_enabled: true
         rsyslog_default: false
-        logs_collections:
+        logging_inputs:
           - name: basic_input
             type: basics
       include_role:

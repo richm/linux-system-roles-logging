@@ -45,7 +45,7 @@
                 target: host.domain
               - name: no_severity_and_facility_protocol_port_target
               - target: no_name.localdomain
-        logs_collections:
+        logging_inputs:
           - name: basic_input
             type: basics
             rsyslog_use_forwards_ruleset: true
