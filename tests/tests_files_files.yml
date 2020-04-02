@@ -20,7 +20,7 @@
               - name: test1
                 facility: authpriv,auth
                 path: /var/log/secure
-        logs_collections:
+        logging_inputs:
           - name: files_input
             type: files
             rsyslog_input_log_path: "{{ __test_inputfiles_dir }}/*.log"

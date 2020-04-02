@@ -128,7 +128,11 @@ __rsyslog_conf_es_elasticsearch:
               )
           {% else %}
           {% if loop.first %}
-              if ( $.logs_collection == "{{ res.logs_collections_name }}" ) and ($.index_prefix startswith "{{ res.index_prefix }}") then {
+              # FIXME: logs_collections_name won't be set any more.
+              # When comes here, it's guaranteed the log message is from the right collector.
+              # We should be able to remove the first half of the condition safely.
+              # if ( $.logs_collection == "{{ res.logs_collections_name }}" ) and ($.index_prefix startswith "{{ res.index_prefix }}") then {
+              if ($.index_prefix startswith "{{ res.index_prefix }}") then {
                 action(
                     type="omelasticsearch"
                     name="{{ res.name | default('viaq-elasticsearch') }}"
@@ -180,7 +184,11 @@ __rsyslog_conf_es_elasticsearch:
           {% endif %}
                 )
           {% else %}
-              else if ( $.logs_collection == "{{ res.logs_collections_name }}" ) and ($.index_prefix startswith "{{ res.index_prefix }}") then {
+              # FIXME: logs_collections_name won't be set any more.
+              # When comes here, it's guaranteed the log message is from the right collector.
+              # We should be able to remove the first half of the condition safely.
+              # else if ( $.logs_collection == "{{ res.logs_collections_name }}" ) and ($.index_prefix startswith "{{ res.index_prefix }}") then {
+              else if ($.index_prefix startswith "{{ res.index_prefix }}") then {
                 action(
                     type="omelasticsearch"
                     name="{{ res.name | default('viaq-elasticsearch') }}"

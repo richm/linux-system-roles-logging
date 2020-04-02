@@ -5,7 +5,7 @@ linux-system-roles-rsyslog/roles
 
 The input roles include Rsyslog configurations, for different projects, that user can collectd logs on.
 
-The projects are called `logs_collections` and the user can choose to deploy several projects at the same time.
+The projects are called `logging_inputs` and the user can choose to deploy several projects at the same time.
 Each project adds a sub-role to ./logging/roles/rsyslog/roles/input_roles/.
 
 The sub-role usually includes `tasks` and `defaults` directories.

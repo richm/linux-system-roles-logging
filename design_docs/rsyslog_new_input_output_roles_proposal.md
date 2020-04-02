@@ -104,7 +104,7 @@ logging_outputs:
         port: 514
   - name: file-output
     type: files
-logs_collections:
+logging_inputs:
   - name: basic-input
     type: basics
     rsyslog_use_files_ruleset: true
@@ -113,9 +113,9 @@ logs_collections:
     rsyslog_use_files_ruleset: true
     rsyslog_use_forwards_ruleset: true
 ```
-In this PR, I propose to make the logs_collections (input roles) separate from logging_outputs (output roles) and specify the relationship using boolean parameters rsyslog_use_files_ruleset and/or rsyslog_use_forwards_ruleset.
+In this PR, I propose to make the logging_inputs (input roles) separate from logging_outputs (output roles) and specify the relationship using boolean parameters rsyslog_use_files_ruleset and/or rsyslog_use_forwards_ruleset.
 
-For the comparison, here is the previous style, in which logs_collections (input roles) used to belong to logging_outputs (output roles) to specify the relationship between the input and the output roles.
+For the comparison, here is the previous style, in which logging_inputs (input roles) used to belong to logging_outputs (output roles) to specify the relationship between the input and the output roles.
 
 **Previous style**
 ```
@@ -127,12 +127,12 @@ logging_outputs:
         protocol: tcp
         target: remote_host_name.remote_domain_name
         port: 514
-    logs_collections:
+    logging_inputs:
       - name: basic-input
         type: basics
   - name: file-output
     type: files
-    logs_collections:
+    logging_inputs:
       - name: file-input
         type: files
 ```
@@ -155,7 +155,7 @@ logging_outputs:
         protocol: tcp
         target: remote_host_name.remote_domain_name
         port: 514
-    logs_collections:
+    logging_inputs:
       - name: basic-input0
         type: basics
         rsyslog_imjournal_persist_state_interval: 1000
@@ -163,7 +163,7 @@ logging_outputs:
         rsyslog_imjournal_ratelimit_burst: 100000
   - name: file-output
     type: files
-    logs_collections:
+    logging_inputs:
       - name: basic-input1
         type: basics
         rsyslog_imjournal_persist_state_interval: 3000
@@ -171,10 +171,10 @@ logging_outputs:
         rsyslog_imjournal_ratelimit_burst: 300000
 ```
 
-### logging_outputs, logs_collections and rsyslog_use_OUTPUT_ruleset
+### logging_outputs, logging_inputs and rsyslog_use_OUTPUT_ruleset
 This is a typical example of the configuration.
 In logging_outputs, the to-be-configured output roles are listed.
-In logs_collections, the to-be-configure input roles are listed.
+In logging_inputs, the to-be-configure input roles are listed.
 Each input role has `rsyslog_use_OUTPUT_ruleset: true|false` to specify which output the log messages are sent to.
 ```
 logging_outputs:
@@ -187,7 +187,7 @@ logging_outputs:
         port: 514
   - name: file-output
     type: files
-logs_collections:
+logging_inputs:
   - name: basic-input
     type: basics
     rsyslog_use_files_ruleset: true
@@ -204,7 +204,7 @@ Using the exception rules, this snippet of the inventory file will configure equ
 ```
 logging_enabled: true
 rsyslog_default: false
-logs_collections:
+logging_inputs:
   - name: basic_input
     type: basics
 ```
@@ -221,7 +221,7 @@ ruleset(name="elasticsearch") {
 ```
 And introduce rsyslog_use_elasticsearch_ruleset parameter to specify the elasticsearch output as follows.
 ```
-logs_collections:
+logging_inputs:
   - name: files-input
     type: files
     rsyslog_use_elasticsearch_ruleset: true

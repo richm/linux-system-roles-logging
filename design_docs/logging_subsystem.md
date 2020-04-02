@@ -70,7 +70,7 @@ linux-system-roles
 
 When ansible-playbook is executed with a playbook pointing to the logging role,
 it starts with tasks in logging/tasks/main.yml.
-In the tasks, it evaluates the `logging_outputs`, `logs_collections` parameters in the loop
+In the tasks, it evaluates the `logging_outputs`, `logging_inputs` parameters in the loop
 to pass the dictionaries to each subsystem.
 If the `logging_output` is `files`, `rsyslog_files_actions` is evaluated.
 If the `logging_putput` is `forwards`, `rsyslog_forwards_action` is evaluated.
@@ -81,7 +81,7 @@ The following is a format of the outputs/inputs/action parameters for the `files
 logging_outputs: [1]
   - name: unique_output_name
     type: files [2]
-    logs_collections: [3]
+    logging_inputs: [3]
       - name: unique_input_name
         type: input_type [4]
     rsyslog_files_actions:
@@ -99,7 +99,7 @@ logging_outputs: [1]
 logging_outputs: [1]
   - name: unique_output_name
     type: forwards [2]
-    logs_collections: [3]
+    logging_inputs: [3]
       - name: unique_input_name
         type: input_type [4]
     rsyslog_forwards_actions:
@@ -115,7 +115,7 @@ logging_outputs: [1]
 ```
 [1]: logging_outputs are implemented in ./logging/roles/rsyslog/roles/output_roles/.<br>
 [2]: output type is one of [elasticsearch, files, forwards]; the type matches the directory name in output_roles.<br>
-[3]: logs_collections are implemented in ./logging/roles/rsyslog/roles/input_roles/.<br>
+[3]: logging_inputs are implemented in ./logging/roles/rsyslog/roles/input_roles/.<br>
 [4]: input_type is one of [basics, ovirt, viaq, viaq-k8s]; the type matches the directory name in input_roles.<br>
 [5]: severity: logs higher than or equal to the value match; e.g., info.  Default to `*`.<br>
 [6]: facility: e.g., auth,authpriv,mail. Default to `*`.<br>

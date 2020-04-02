@@ -93,7 +93,7 @@
       loop: '{{ __rsyslog_common_rules | flatten }}'
       when:
         - rsyslog_enabled | bool
-        - logs_collections | d([])
+        - logging_inputs | d([])
         - item.filename | d() or item.name | d()
         - item.state is undefined or item.state != 'absent'
         - item.options | d() or item.sections | d()
@@ -109,7 +109,7 @@
       loop: '{{ __rsyslog_common_rules | flatten }}'
       when:
         - not rsyslog_enabled | bool
-        - logs_collections | d([])
+        - logging_inputs | d([])
         - item.filename | d() or item.name | d()
         - item.options | d() or item.sections | d()
         - item.state is defined and item.state == 'absent'
@@ -133,7 +133,7 @@
     - name: Run deploy input sub-roles configs
       include_role:
         name: "{{ role_path }}/roles/input_roles/{{ input_item.type }}"
-      loop: "{{ logs_collections | flatten(1) }}"
+      loop: "{{ logging_inputs | flatten(1) }}"
       loop_control:
         loop_var: input_item
       when:
@@ -145,7 +145,7 @@
       include_role:
         name: "{{ role_path }}/roles/input_roles/{{ input_item.type }}"
         tasks_from: cleanup.yml
-      loop: "{{ logs_collections | flatten(1) }}"
+      loop: "{{ logging_inputs | flatten(1) }}"
       loop_control:
         loop_var: input_item
       when:
@@ -153,13 +153,13 @@
         - input_item.state | d('present') == 'absent'
 
     # Treat the files output specially.
-    # When logs_collections is defined and not empty,
+    # When logging_inputs is defined and not empty,
     #   If the rsyslog_outputs does not contain ['files'], add it.
     - name: Add ['files'] to rsyslog_outputs if necessary
       set_fact:
         rsyslog_outputs: "{{ rsyslog_outputs | flatten(1) + ['files'] }}"
       when:
-        - logs_collections | d([])
+        - logging_inputs | d([])
         - (rsyslog_outputs is not defined) or ('files' not in rsyslog_outputs)
 
     - name: Run output sub-roles configs
