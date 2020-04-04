@@ -9,14 +9,3 @@ __rsyslog_base_packages: ['rsyslog']
 __rsyslog_tls_packages: ['rsyslog-gnutls', 'ca-certificates']
 
 rsyslog_use_imuxsock: false
-
-# rsyslog_input_log_{path,tag} are parameters for the imfile.
-# rsyslog_input_log_path specifies the files to read. Wildcard '*' is allowed in the path
-# rsyslog_input_log_tag specifies the tag to be added to the logs.
-rsyslog_input_log_path: "/var/log/containers/*.log"
-rsyslog_input_log_tag: "container"
-
-# imjournal parameters
-#__rsyslog_imjournal_persist_state_interval: 10 # or 1000?
-#__rsyslog_imjournal_ratelimit_interval: 600    # or 10?
-#__rsyslog_imjournal_ratelimit_burst: 20000     # or 1000000?

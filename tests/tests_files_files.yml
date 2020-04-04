@@ -1,8 +1,9 @@
-- name: Ensure that the role runs with parameters to output into local files
+- name: Ensure that the role runs with parameters from two imfile inputs to two files outputs
   hosts: all
   become: true
   vars:
-    __test_inputfiles_dir: /var/log/inputdirectory
+    __test_inputfiles_dir0: /var/log/inputdirectory0
+    __test_inputfiles_dir1: /var/log/inputdirectory1
 
   tasks:
     - name: deploy config to output into local files
@@ -10,22 +11,26 @@
         logging_enabled: true
         rsyslog_default: false
         logging_outputs:
-          - name: files-output
+          - name: files_output0
             type: files
-            rsyslog_files_actions:
-              - name: test0
-                severity: info
-                exclude: authpriv.none;auth.none;cron.none;mail.none
-                path: /var/log/messages
-              - name: test1
-                facility: authpriv,auth
-                path: /var/log/secure
+            severity: info
+            exclude: authpriv.none;auth.none;cron.none;mail.none
+            path: /var/log/messages
+          - name: files_output1
+            type: files
+            facility: authpriv,auth
+            path: /var/log/secure
         logging_inputs:
-          - name: files_input
+          - name: files_input0
             type: files
-            rsyslog_input_log_path: "{{ __test_inputfiles_dir }}/*.log"
-            rsyslog_input_log_tag: "newtag"
-            rsyslog_use_files_ruleset: true
+            rsyslog_input_log_path: "{{ __test_inputfiles_dir0 }}/*.log"
+          - name: files_input1
+            type: files
+            rsyslog_input_log_path: "{{ __test_inputfiles_dir1 }}/*.log"
+        logging_flows:
+          - name: flow_0
+            inputs: [files_input0, files_input1]
+            outputs: [files_output0, files_output1]
       include_role:
         name: linux-system-roles.logging
 
@@ -42,11 +47,11 @@
 
     - name: Check file counts in rsyslog.d
       assert:
-        that: rsyslog_d_file_count.matched >= 9
+        that: rsyslog_d_file_count.matched >= 7
 
     - name: Set files config path
       set_fact:
-        test_outputfiles_conf: "/etc/rsyslog.d/30-output.files"
+        test_outputfiles_conf: "/etc/rsyslog.d/30-output-files.conf"
 
     - name: Get the output files config stat
       stat:
@@ -80,11 +85,20 @@
       register: cat_file
       changed_when: false
 
-    - name: Grep input file
-      command: /bin/grep 'inputdirectory' {{ __test_inputfiles_conf }}
+    - name: Grep input file 0
+      command: /bin/grep 'inputdirectory0' {{ __test_inputfiles_conf }}
       register: files_conf_input_file
       changed_when: false
 
-    - name: Check the filter
+    - name: Check the filter 0
       assert:
-        that: files_conf_input_file.stdout is match("input\(type=\"imfile\" file=\"\/var\/log\/inputdirectory\/\*\.log\" tag=\"newtag\"\)")
+        that: files_conf_input_file.stdout is match(" *input\(type=\"imfile\" file=\"\/var\/log\/inputdirectory0\/\*\.log\" tag=\"files_input0\"\)")
+
+    - name: Grep input file 1
+      command: /bin/grep 'inputdirectory1' {{ __test_inputfiles_conf }}
+      register: files_conf_input_file
+      changed_when: false
+
+    - name: Check the filter 1
+      assert:
+        that: files_conf_input_file.stdout is match(" *input\(type=\"imfile\" file=\"\/var\/log\/inputdirectory1\/\*\.log\" tag=\"files_input1\"\)")

@@ -13,11 +13,9 @@ rsyslog_capabilities: []
 
 rsyslog_use_imuxsock: false
 
-# rsyslog_input_log_{path,tag} are parameters for the imfile.
+# rsyslog_input_log_path is a parameter for the imfile.
 # rsyslog_input_log_path specifies the files to read. Wildcard '*' is allowed in the path
-# rsyslog_input_log_tag specifies the tag to be added to the logs.
 rsyslog_input_log_path: "/var/log/containers/*.log"
-rsyslog_input_log_tag: "container"
 
 # __rsyslog_basics_rules
 #
@@ -29,8 +27,7 @@ __rsyslog_basics_rules:
   - '{{ __rsyslog_conf_system_input }}'
   - '{{ __rsyslog_conf_network_input }}'
 
-# Debops example configuration options
-# --------------------------------------------
+__basics_first_time: true
 
 # __rsyslog_conf_local_basics_modules
 #
@@ -59,25 +56,35 @@ __rsyslog_conf_local_basics_modules:
                  SysSock.Use="off") # Turn off message reception via local log socket.
           {% endif %}
           # Read from journald
-          {% for element in logging_inputs %}
-          {% if element.name is defined and element.type == "basics" and
-             (loop.previtem is not defined or
-              (loop.previtem is defined and loop.previtem.type != "basics")) %}
           module(load="imjournal"
                  StateFile="{{ rsyslog_work_dir }}/imjournal.state"
-                 RateLimit.Burst="{{ element.rsyslog_imjournal_ratelimit_burst | d(20000) }}"
-                 RateLimit.Interval="{{ element.rsyslog_imjournal_ratelimit_interval | d(600) }}"
-                 PersistStateInterval="{{ element.rsyslog_imjournal_persist_state_interval | d(10) }}")
-          {% if element.rsyslog_use_files_ruleset | d(true) %}
-          call files
+                 RateLimit.Burst="{{ rsyslog_input_basics.0.rsyslog_imjournal_ratelimit_burst | d(20000) }}"
+                 RateLimit.Interval="{{ rsyslog_input_basics.0.rsyslog_imjournal_ratelimit_interval | d(600) }}"
+                 PersistStateInterval="{{ rsyslog_input_basics.0.rsyslog_imjournal_persist_state_interval | d(10) }}")
+          {% if rsyslog_flows | length > 0 %}
+          {% for flow in rsyslog_flows %}
+          {% for input_name in flow.inputs %}
+          {% if rsyslog_input_basics.0.name == input_name %}
+          {% if __basics_first_time == true %}
+          if $inputname == "imjournal" then {
           {% endif %}
-          {% if element.rsyslog_use_forwards_ruleset | d(false) %}
-          call forwards
+          {% for flow_output in flow.outputs %}
+            call {{ flow_output }}
+          {% endfor %}
+          {% if __basics_first_time == true %}
+            stop
+          }
+          {% set __basics_first_time = false %}
           {% endif %}
-          stop
-
           {% endif %}
           {% endfor %}
+          {% endfor %}
+          {% else %}
+          if $inputname == "imjournal" then {
+            call files
+            stop
+          }
+          {% endif %}
 
   - name: 'remote-modules'
     type: 'modules'

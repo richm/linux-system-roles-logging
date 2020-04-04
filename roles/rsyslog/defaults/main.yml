@@ -188,16 +188,13 @@ rsyslog_tcp_tls_port: '6514'
 # Files and Forwards outputs
 # --------------------------
 
-# rsyslog_files_actions
-#
-# Array of dictionary to specify files to store logs for files outputs.
-rsyslog_files_actions: []
+rsyslog_output_files: []
+rsyslog_output_forwards: []
 
-# rsyslog_forwards_actions
-#
-# Array of dictionary to specify files to forward target host to redirect
-# the logs to the remote rsyslog servers for forwards output.
-rsyslog_forwards_actions: []
+rsyslog_flows: []
+
+rsyslog_input_basics: []
+rsyslog_input_files: []
 
 # Rsyslog configuration rules
 # ---------------------------
@@ -304,42 +301,19 @@ __rsyslog_conf_common_defaults:
 
 # __rsyslog_conf_default_rulesets
 #
-# The ``rsyslogd`` configuration can contain multiple rulesets, each one
-# connected to an input channel (see
-# http://www.rsyslog.com/doc/v8-stable/concepts/multi_ruleset.html for more
-# details).
-#
-# Default rulesets provide 3 paths in the output roles.
-# ruleset `file` directs to the files output role, which is implemented in `filename.files`.
-# ruleset `forwards` directs to the forwards output role, which is implemented in `filename.forwards`.
 # ruleset `remote` directs to the files output role, which is implemented in `filename.remote`.
-#
-# These rulesets are for managing the paths separately from the rest of the paths using .conf suffix.
-# For instance, system log messages are not to be sent to, e.g., elasticsearch, but to be stored
-# just in the local files.
 __rsyslog_conf_default_rulesets:
 
   - name: 'default-rulesets'
     type: 'rules'
+    state: '{{ "present" if ("network" in rsyslog_capabilities) else "absent" }}'
     sections:
-
-      - comment: 'Rules for the local system logs'
-        options: |-
-          ruleset(name="files") {
-            $IncludeConfig {{ rsyslog_config_dir }}/*.files
-          }
-          ruleset(name="forwards") {
-            $IncludeConfig {{ rsyslog_config_dir }}/*.forwards
-          }
 
       - comment: 'Rules for logs incoming from remote hosts'
         options: |-
           ruleset(name="remote") {
             $IncludeConfig {{ rsyslog_config_dir }}/*.remote
           }
-        state: '{{ "present"
-                  if ("network" in rsyslog_capabilities)
-                  else "absent" }}'
 
 __rsyslog_conf_send_targets_only:
 

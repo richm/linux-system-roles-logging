@@ -15,48 +15,42 @@ This proposal will discuss about these items:
 
 Please note that this github commit starting this doc implements the first cut of the proposal including:
 - input roles - basics input role (`imjournal`, `imuxsock`, `imudp`, `imptcp`) and files input role (`imfile`), and
-- output roles - files output role (`omfile`) and forwards output role (`omfwd`).
+- output roles - files output role (`omfile`), forwards output role (`omfwd`) and elasticsearch role (`omelasticsearch`).
 Leftover tasks, other roles to be changed and eliminating `rsyslog_default`, are discussed in [To Do's](#to-dos).
 
 ## Proposals
 
 ### Output roles
-Each output role would be stored in a configuration file which suffix is a type name.
+Each output action is in the ruleset which name is the logging_outputs name.
 
-Files and Forwards output configuration files in /etc/rsyslog.d:
+Elasticsearch, Files and Forwards output configuration files in /etc/rsyslog.d:
 ```
   10-output-modules.conf
-  30-output.files
-  30-output.forwards
+  30-output-elasticsearch.conf
+  30-output-files.conf
+  30-output-forwards.conf
 ```
-
-### Ruleset to switch the output
-Using rsyslog rulesets, we prepare all possible output combinations in the ruleset configuration file as follows.
-Note: The ruleset name is made from the output types in the alphabetical order.
+With configuring the outputs (in this example, `files`) with a unique name (e.g., "files_output1", etc.), it will generate an rsyslog configuraion in the ruleset which name is the unique name.
 ```
-==> 50-default-rulesets.conf <==
-# Ansible managed
-
-#
-# Rules for the local system logs
-#
-ruleset(name="files") {
-  $IncludeConfig /etc/rsyslog.d/*.files
+ruleset(name="files_output1") {
+  *.info;authpriv.none;auth.none;cron.none;mail.none /var/log/messages
 }
-ruleset(name="forwards") {
-  $IncludeConfig /etc/rsyslog.d/*.forwards
+ruleset(name="files_output2") {
+  *.emerg :omusrmsg:*
 }
 ```
-In this PR, just files and forwards outputs are supported.  As described in [To Do's](#to-dos), elasticsearch is going to be added next.
 
 ### Input roles
-Based upon the inventory file that users provide, input config jumps to the ruleset.
+The input role variables in the inventory specifies the input methods (plugins) to get the log messages.
+Currently, basics type (`imjournal` and `imtcp`, `imptcp`, `imudp`) and files type (`imfiles) are supported.
 
+### Flows to define the Input and Output Roles
+Based upon the flows definition in the inventory that customers provide, input config jumps to the ruleset.
 The next `imjournal` (basics) example shows log messages read from journald by the `imjournal` plugin are logged in the local files.
 
 **`imjournal` example**
+Log messages from journald are read by `imjournal`.  Then, they are passed to the files output by calling `files_output1` and `files_output2` ruleset.
 ```
-==> 10-basics-modules.conf <==
 # Ansible managed
 
 #
@@ -68,12 +62,15 @@ module(load="imjournal"
        RateLimit.Burst="20000"
        RateLimit.Interval="600"
        PersistStateInterval="10")
-call files
-stop
+if $inputname == "imjournal" then {
+  call files_output1
+  call files_output2
+  stop
+}
 ```
 
 **`imfile` example**
-The next `imfile` example shows log messages read from /var/log/inputdirectory/*.log by the `imfile` plugin are logged in the local files as well as forwarded to the remote host.
+The next `imfile` example shows log messages read from /var/log/containers/*.log and /mnt/var/log/*.log by the `imfile` plugin are logged in the local files specified by `files_output0` and `files_output1`.
 ```
 ==> 90-imfile-input.conf <==
 # Ansible managed
@@ -81,14 +78,21 @@ The next `imfile` example shows log messages read from /var/log/inputdirectory/*
 #
 # Log messages from log files
 #
-
-input(type="imfile" file="/var/log/inputdirectory/*.log" tag="container")
-call files
-call forwards
-stop
+input(type="imfile" file="/var/log/containers/*.log" tag="files_input0")
+if $syslogtag == "files_input0" then {
+  call files_output0
+  call files_output1
+  stop
+}
+input(type="imfile" file="/mnt/var/log/*.log" tag="files_input1")
+if $syslogtag == "files_input1" then {
+  call files_output0
+  call files_output1
+  stop
+}
 ```
 
-### Inventory file changes
+### Inventory variable changes
 Here is an example that the inputs from `imjournal` (basics) are logged in the local file;
 the inputs from `imfile` (files) are forwarded to the remote host in addition to the local file,
 
@@ -97,23 +101,25 @@ the inputs from `imfile` (files) are forwarded to the remote host in addition to
 logging_outputs:
   - name: forward-output
     type: forwards
-    rsyslog_forwards_actions:
-      - name: to-remote
-        protocol: tcp
-        target: remote_host_name.remote_domain_name
-        port: 514
+    protocol: tcp
+    target: remote_host_name.remote_domain_name
+    port: 514
   - name: file-output
     type: files
 logging_inputs:
   - name: basic-input
     type: basics
-    rsyslog_use_files_ruleset: true
   - name: file-input
     type: files
-    rsyslog_use_files_ruleset: true
-    rsyslog_use_forwards_ruleset: true
+logging_flows:
+  - name: flow0
+    inputs: [basic-input]
+    outputs: [file-output]
+  - name: flow1
+    inputs: [file-input]
+    outputs: [file-output, forward-output]
 ```
-In this PR, I propose to make the logging_inputs (input roles) separate from logging_outputs (output roles) and specify the relationship using boolean parameters rsyslog_use_files_ruleset and/or rsyslog_use_forwards_ruleset.
+In this PR, I propose to make the logging_inputs (input roles) separate from logging_outputs (output roles) and specify the relationship using logging_flow variable with its subvariables `inputs` and `outputs`.  The `inputs` variable stores the list of the names of input roles and `outputs` does the list of the names of output roles.
 
 For the comparison, here is the previous style, in which logging_inputs (input roles) used to belong to logging_outputs (output roles) to specify the relationship between the input and the output roles.
 
@@ -175,32 +181,32 @@ logging_outputs:
 This is a typical example of the configuration.
 In logging_outputs, the to-be-configured output roles are listed.
 In logging_inputs, the to-be-configure input roles are listed.
-Each input role has `rsyslog_use_OUTPUT_ruleset: true|false` to specify which output the log messages are sent to.
 ```
 logging_outputs:
   - name: forward-output
     type: forwards
-    rsyslog_forwards_actions:
-      - name: to-remote
-        protocol: tcp
-        target: remote_host_name.remote_domain_name
-        port: 514
+    protocol: tcp
+    target: remote_host_name.remote_domain_name
+    port: 514
   - name: file-output
     type: files
 logging_inputs:
   - name: basic-input
     type: basics
-    rsyslog_use_files_ruleset: true
   - name: file-input
     type: files
-    rsyslog_use_files_ruleset: true
-    rsyslog_use_forwards_ruleset: true
+logging_flows:
+  - name: flow0
+    inputs: [basic-input]
+    outputs: [file-output]
+  - name: flow1
+    inputs: [file-input]
+    outputs: [file-output, forward-output]
 ```
 There are some exceptions.
-- The files output is configured, by default. That is, even if there is no input roles that write logs to the local files, the files output config file is deployed. The filters and the actions in the configuration file (30-output.files) are equivalent to the ones in the original rsyslog.conf.
-- Boolean parameter rsyslog_use_file_ruleset is true, by default, in the basics input role. For the basics input (imjournal) to skip writing to the local system logs into the local log files, `rsyslog_use_files_ruleset: false` needs to be added, explicitly.
+- The files output is configured, by default. That is, even if there is no logging_outputs is given, the `files` output config file is deployed. The filters and the actions in the configuration file (30-output-files.conf) are equivalent to the ones in the original rsyslog.conf.
 
-Using the exception rules, this snippet of the inventory file will configure equivalent to the original rsyslog.conf. Note: rsyslog_default is going to be eliminated next.
+Using the exception rules, this snippet of the inventory variables will configure equivalent to the original rsyslog.conf. Note: rsyslog_default is going to be eliminated next.
 ```
 logging_enabled: true
 rsyslog_default: false
@@ -208,31 +214,8 @@ logging_inputs:
   - name: basic_input
     type: basics
 ```
+
 ## To Do's
-
-### Elasticsearch
-There is another output role `elasticsearch`.
-If this proposal is approved,
-I'm planning to rename the 30-output-elasticsearch.conf to 30-output.elasticsearch and add the following rulesets.
-```
-ruleset(name="elasticsearch") {
-  $IncludeConfig /etc/rsyslog.d/*.elasticsearch
-}
-```
-And introduce rsyslog_use_elasticsearch_ruleset parameter to specify the elasticsearch output as follows.
-```
-logging_inputs:
-  - name: files-input
-    type: files
-    rsyslog_use_elasticsearch_ruleset: true
-```
-Extending this idea, when we add a new output, e.g., kafka to the existing 3 output roles, we are adding following ruleset with the boolean rsyslog_uses_kafka_ruleset variable and deploying the output config file 30-output.kafka.
-```
-ruleset(name="kafka") {
-  $IncludeConfig /etc/rsyslog.d/*.kafka
-}
-```
-
 ### Input role ovirt
 The input role ovirt is made from two inputs (`imfile`, `imtcp`) and the formatting part.
 The target outputs are fixed and no need to be configured by the users in the inventory file. (Please correct if this assumption is wrong.)
@@ -241,9 +224,11 @@ if the condition `{% if collect_ovirt_vdsm_log or collect_ovirt_engine_log %}` o
 ` $syslogtag startswith 'collectd'` is true, the log message is stored in the elasticsearch only. -- [1]
 Otherwise, the logs are stored in the elasticsearch as well as in the local files (by the original rsyslog.conf).
 That is, the code would be changed so that:
-- If the conditions [1] are satisfied, the logs are to be sent to the elasticsearch output only by `call elasticsearch`.
-- Otherwise, `call elasticsearch` and `call files`, by which the logs are sent to the both outputs.
+- If the conditions [1] are satisfied, the logs are to be sent to the elasticsearch output only by `call unique_elasticsearch_output_name`.
+- Otherwise, `call unique_elasticsearch_output_name` and `call files`, by which the logs are sent to the both outputs.
 If this change works as expected, we could safely eliminate rsyslog_default and 40-send-targets-only.conf with .send_targets_only that reduces an extra config file.
+
+There is a test case tests_files_elasticsearch.yml in the tests directory (WARNING: It is not tested with elasticsearch yet. It just checks the syntax of the rsyslog config files.)
 
 ### Input role viaq + viaq-k8s
 The input roles viaq and viaq-k8s are tightly coupled,
