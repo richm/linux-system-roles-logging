@@ -1,8 +1,8 @@
-- name: Ensure that the role runs with parameters to output into local files
+- name: Ensure that the role runs with parameters from imjournal to four omfiles outputs
   hosts: all
   become: true
   vars:
-    __test_files_conf: /etc/rsyslog.d/30-output.files
+    __test_files_conf: /etc/rsyslog.d/30-output-files.conf
 
 
   tasks:
@@ -11,26 +11,30 @@
         logging_enabled: true
         logging_purge_confs: true
         logging_outputs:
-          - name: files-output
+          - name: files_output0
             type: files
-            rsyslog_files_actions:
-              - name: test0
-                severity: info
-                exclude: authpriv.none;auth.none;cron.none;mail.none
-                path: /var/log/messages
-              - name: test1
-                facility: authpriv,auth
-                path: /var/log/secure
-              - name: test2
-                severity: emerg
-                path: :omusrmsg:*
-              - name: test3
-                facility: local7
-                path: /var/log/boot.log
+            facility: authpriv,auth
+            path: /var/log/secure
+          - name: files_output1
+            type: files
+            severity: info
+            exclude: authpriv.none;auth.none;cron.none;mail.none
+            path: /var/log/messages
+          - name: files_output2
+            type: files
+            severity: emerg
+            path: :omusrmsg:*
+          - name: files_output3
+            type: files
+            facility: local7
+            path: /var/log/boot.log
         logging_inputs:
           - name: basic_input
             type: basics
-            rsyslog_use_files_ruleset: true
+        logging_flows:
+          - name: flow_0
+            inputs: [basic_input]
+            outputs: [files_output0, files_output1, files_output2, files_output3]
       include_role:
         name: linux-system-roles.logging
 
@@ -47,7 +51,7 @@
 
     - name: Check file counts in rsyslog.d
       assert:
-        that: rsyslog_d_file_count.matched >= 7
+        that: rsyslog_d_file_count.matched >= 6
 
     - name: Get the files config stat
       stat:
@@ -65,7 +69,7 @@
 
     - name: Check the filter
       assert:
-        that: files_conf_messages.stdout is match("\*.info;*authpriv.none;auth.none;cron.none;mail.none.*.var.log.messages")
+        that: files_conf_messages.stdout is match(" *\*.info;*authpriv.none;auth.none;cron.none;mail.none.*.var.log.messages")
 
     - name: Run logger to generate a test log message
       command: /bin/logger -i -p local6.info -t testTag0 testMessage0000

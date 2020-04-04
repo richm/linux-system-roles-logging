@@ -12,7 +12,8 @@ rsyslog_capabilities: []
 __rsyslog_files_input_packages: []
 
 rsyslog_input_log_path: "/var/log/containers/*.log"
-rsyslog_input_log_tag: "container"
+
+__files_first_time: true
 
 # __rsyslog_files_input_rules
 #
@@ -47,30 +48,27 @@ __rsyslog_conf_imfile_inputs:
 
       - comment: 'Log messages from log files'
         options: |-
-          {% if rsyslog_elasticsearch | d([]) %}
-          # FIXME: Need to normalize a log before passing it to elasticsearch output
-
-          {% for element in logging_inputs %}
-          {% if element.name is defined and element.type == "files" %}
-          input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.rsyslog_input_log_tag | d(rsyslog_input_log_tag) }}" ruleset="try_es")
+          {% for element in rsyslog_input_files %}
+          input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.name }}")
+          {% set __files_first_time = true %}
+          {% for flow in rsyslog_flows %}
+          {% for input_name in flow.inputs %}
+          {% if element.name == input_name %}
+          {% if __files_first_time == true %}
+          if $syslogtag == "{{ element.name }}" then {
+          {% endif %}
+          {% for flow_output in flow.outputs %}
+          {% if flow_output.startswith("elasticsearch") %}
+            # FIXME: Need to normalize a log before passing it to elasticsearch output
+          {% endif %}
+            call {{ flow_output }}
+          {% endfor %}
+          {% if __files_first_time == true %}
+            stop
+          }
+          {% set __files_first_time = false %}
+          {% endif %}
           {% endif %}
           {% endfor %}
-
-          {% else %}
-
-          {% for element in logging_inputs %}
-          {% if element.name is defined and element.type == "files" and
-             (loop.previtem is not defined or
-              (loop.previtem is defined and loop.previtem.type != "files")) %}
-          input(type="imfile" file="{{ element.rsyslog_input_log_path | d(rsyslog_input_log_path) }}" tag="{{ element.rsyslog_input_log_tag | d(rsyslog_input_log_tag) }}")
-          {% if element.rsyslog_use_files_ruleset | d(false) %}
-          call files
-          {% endif %}
-          {% if element.rsyslog_use_forwards_ruleset | d(false) %}
-          call forwards
-          {% endif %}
-          stop
-          {% endif %}
           {% endfor %}
-
-          {% endif %}
+          {% endfor %}

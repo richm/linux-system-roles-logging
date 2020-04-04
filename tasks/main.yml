@@ -6,43 +6,87 @@
       set_fact:
         rsyslog_enabled: "{{ logging_enabled | d(true) }}"
 
-    - name: Set rsyslog_elasticsearch
+    - name: Set rsyslog_output_elasticsearch for the omelasticsearch output
       set_fact:
-        rsyslog_elasticsearch: "{{ rsyslog_elasticsearch | d([]) }} + {{ [ item ] }}"
+        rsyslog_output_elasticsearch: "{{ rsyslog_output_elasticsearch | d([]) }} + {{ [ item ] }}"
       loop: "{{ logging_outputs }}"
       when:
+        - item.name is defined
         - item.type | d('') == 'elasticsearch'
 
-    - name: Set rsyslog_files_actions
+    - name: Set rsyslog_output_files for the omfile outputs
       set_fact:
-        rsyslog_files_actions: "{{ rsyslog_files_actions | d([]) }} + {{ item.rsyslog_files_actions }}"
+        rsyslog_output_files: "{{ rsyslog_output_files | d([]) }} + {{ [ item ] }}"
       loop: "{{ logging_outputs }}"
       when:
+        - item.name is defined
         - item.type | d('') == 'files'
-        - item.rsyslog_files_actions is defined
 
-    - name: Set rsyslog_forwards_actions
+    - name: Set rsyslog_output_forwards for the omfwd output
       set_fact:
-        rsyslog_forwards_actions: "{{ rsyslog_forwards_actions | d([]) }} + {{ item.rsyslog_forwards_actions }}"
+        rsyslog_output_forwards: "{{ rsyslog_output_forwards | d([]) }} + {{ [ item ] }}"
       loop: "{{ logging_outputs }}"
       when:
+        - item.name is defined
+        - item.target is defined
         - item.type | d('') == 'forwards'
-        - item.rsyslog_forwards_actions is defined
-
-    - name: Initialize rsyslog_outputs
-      set_fact:
-        rsyslog_outputs: []
 
     - name: Set rsyslog_outputs
       set_fact:
-        rsyslog_outputs: "{{ rsyslog_outputs | d([]) }} + {{ [ item.type ] }}"
-      with_items: "{{ logging_outputs }}"
-      when: item.type is defined
+        rsyslog_outputs: '{{ rsyslog_output_elasticsearch | d([]) }} + {{ rsyslog_output_files | d([]) }} + {{ rsyslog_output_forwards | d([]) }}'
 
-    - set_fact:
-        rsyslog_outputs: "{{ rsyslog_outputs | d([]) | unique }}"
-      tags:
-        - skip_ansible_lint
+    - name: Set files output if logging_output_files is empty and logging_inputs is not empty
+      set_fact:
+        rsyslog_outputs: '{{ rsyslog_outputs | d([]) }} + [ {"name": "files", "type": "files"} ]'
+      when:
+        - rsyslog_output_files | d([]) | length == 0
+        - logging_inputs | d([])
+
+    - name: Set rsyslog_input_basics
+      set_fact:
+        rsyslog_input_basics: '{{ rsyslog_input_basics | d([]) }} + {{ [ item ] }}'
+      with_items: "{{ logging_inputs }}"
+      when:
+        - item.name is defined
+        - item.type | d('') == 'basics'
+
+    # If there are multiple basics configs are given, report an error
+    - name: Check that there is not multiple basics input is configured
+      assert:
+        that: rsyslog_input_basics | d([]) | length <= 1
+
+    - name: Set rsyslog_input_files
+      set_fact:
+        rsyslog_input_files: "{{ rsyslog_input_files | d([]) }} + {{ [ item ] }}"
+      with_items: "{{ logging_inputs }}"
+      when:
+        - item.name is defined
+        - item.type | d('') == 'files'
+
+    - name: Set rsyslog_input_ovirt
+      set_fact:
+        rsyslog_input_ovirt: "{{ rsyslog_input_ovirt | d([]) }} + {{ [ item ] }}"
+      with_items: "{{ logging_inputs }}"
+      when:
+        - item.name is defined
+        - item.type | d('') == 'ovirt'
+
+    - name: Set rsyslog_input_viaq
+      set_fact:
+        rsyslog_input_viaq: "{{ rsyslog_input_viaq | d([]) }} + {{ [ item ] }}"
+      with_items: "{{ logging_inputs }}"
+      when:
+        - item.name is defined
+        - item.type | d('') == 'viaq'
+
+    - name: Set rsyslog_flows
+      set_fact:
+        rsyslog_flows: "{{ rsyslog_flows | d([]) }} + {{ [ item ] }}"
+      with_items: "{{ logging_flows }}"
+      when:
+        - item.name is defined
+        - item.inputs | d('[]')
+        - item.outputs | d('[]')
 
     - name: Set rsyslog_purge_original_conf fact to purge all configuration files before saving the new ones.
       set_fact:
