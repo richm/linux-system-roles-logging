@@ -1,5 +1,10 @@
 ---
-- name: restart rsyslogd
+- name: reset failure
+  listen: restart rsyslogd
+  command: systemctl reset-failed rsyslog
+
+- name: restart rsyslog
+  listen: restart rsyslogd
   service:
     name: rsyslog
     state: restarted
