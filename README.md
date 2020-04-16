@@ -221,12 +221,12 @@ Variables in vars.yml
    -  ** `type: files`**
       - `facility`: facility; default to `*`
       - `severity`: severity; default to `*`
-	  - `exclude`: exclude; default to none.
-	  - `path`: path to the output file.  Must have.  If `path` is not defined, the files instance is dropped.
-	  These values are used in the omfile action as follows:
-	  ```
-	  facility.severity;exclude path
-	  ```
+      - `exclude`: exclude; default to none.
+      - `path`: path to the output file.  Must have.  If `path` is not defined, the files instance is dropped.
+      These values are used in the omfile action as follows:
+      ```
+      facility.severity;exclude path
+      ```
    -  ** `type: forwards`**
       - `facility`: facility; default to `*`
       - `severity`: severity; default to `*`
@@ -325,9 +325,9 @@ can test against a different image/tag like so:
 CI tests
 ========
 In the tests directory, currently the following test scripts are available.
-tests_combination.yml	 tests_default.yml		tests_files_files.yml		   tests_files.yml
-tests_combination2.yml	 tests_enabled.yml		tests_files_forwards_implicit.yml  tests_forwards.yml
-tests_default_files.yml  tests_files_elasticsearch.yml	tests_files_forwards.yml	   tests_listen.yml
+tests_combination.yml    tests_default.yml              tests_files_files.yml              tests_files.yml
+tests_combination2.yml   tests_enabled.yml              tests_files_forwards_implicit.yml  tests_forwards.yml
+tests_default_files.yml  tests_files_elasticsearch.yml  tests_files_forwards.yml           tests_listen.yml
 
 To run them manually,
 1. Download CentOS qcow2 image from https://cloud.centos.org/centos/.
@@ -339,7 +339,7 @@ To run them manually,
 3. To debug it, add `TEST_DEBUG=true` prior to `ansible-playbook`.
 4. Then, you could ssh to the node as follows:
    ```
-   ssh -p PID -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /tmp/inventory-cloudqvv68qge/identity root@127.0.0.3
+   ssh -p PID -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /tmp/inventory-cloudRANDOMSTR/identity root@127.0.0.3
    ```
    The PID is returned from the following command line.
    ```
