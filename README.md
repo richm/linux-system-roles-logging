@@ -111,7 +111,7 @@ logging_enabled: true
 logging_purge_confs: true
 ```
 
-2) Deploying basic LSR/Logging config files in /etc/rsyslog.d, which handle inputs from the local system and outputs into the local files, which actions are predefined.
+2) Deploying basic LSR/Logging config files in /etc/rsyslog.d, which handle inputs from the local system (e.g. systemd journald), and outputs into local files (e.g. /var/log/messages).
 ```
 logging_enabled: true
 logging_purge_confs: true
@@ -126,7 +126,7 @@ logging_flows:
     inputs: [system-input]
     outputs: [local-files]
 ```
-The local files `type files` is a special output.  The predefined file type `logging_outputs` and specifying the logging_flows could be skippable.  So, the following configuration is the same as above.
+If inputs are specified, but no flows or outputs are specified, the default is to write the input to the predefined system log files e.g. /var/log/messages.
 ```
 logging_enabled: true
 logging_purge_confs: true
