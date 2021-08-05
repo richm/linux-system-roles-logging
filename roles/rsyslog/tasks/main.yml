@@ -84,9 +84,9 @@
           changed_when: false
 
         - name: Purge original conf
-          file:
-            state: absent
-            path: "{{ __rsyslog_config_dir }}/*"
+          shell: |-
+            set -euo pipefail
+            /bin/rm -rfv {{ __rsyslog_config_dir }}/*
           when: __rsyslog_purge_original_conf | bool | d(false)
       vars:
         __rsyslog_backup_dir: '{{ rsyslog_backup_dir |
