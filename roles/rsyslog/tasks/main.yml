@@ -76,8 +76,10 @@
 
         - name: Archive the contents of {{ __rsyslog_config_dir }} to
             the backup dir
+          vars:
+            __now: "{{ lookup('pipe', 'date +%s') }}"
           command: >
-            tar -cvzPf "{{ __rsyslog_backup_dir }}/backup.tgz"
+            tar -cvzPf "{{ __rsyslog_backup_dir }}/backup{{ __now }}.tgz"
                 /etc/rsyslog.conf "{{ __rsyslog_config_dir }}"
           args:
             warn: false  # suppress 'unarchive' warning
@@ -88,9 +90,28 @@
             set -euo pipefail
             /bin/rm -rfv {{ __rsyslog_config_dir }}/*
           when: __rsyslog_purge_original_conf | bool | d(false)
+
+        - block:
+            - name: Get backup files
+              shell: ls "{{ __rsyslog_backup_dir }}"
+              register: __backups
+
+            - name: Get backup file stat
+              stat:
+                path: "{{ __rsyslog_backup_dir }}/{{ __backups.stdout_lines[0] }}"
+              register: __backup_stat
+
+            - name: Restore original conf
+              shell: |-
+                # set -euo pipefail
+                tar -xvzPf "{{ __rsyslog_backup_dir }}/{{ __backups.stdout_lines[0] }}"
+              when: __backup_stat.stat.exists
+          when:
+            - __rsyslog_restore_original_conf | bool | d(false)
+
       vars:
         __rsyslog_backup_dir: '{{ rsyslog_backup_dir |
-          d("/tmp") }}/rsyslog.d-{{ ansible_date_time.iso8601_basic_short }}'
+          d("/var/tmp") }}/rsyslog.d-{{ ansible_date_time.iso8601_basic_short }}'
 
     - name: "Create logging directory if it does not exist or
       the ownership and/or modes are different."
